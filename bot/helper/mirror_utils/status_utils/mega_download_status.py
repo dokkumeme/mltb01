@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-from bot.helper.ext_utils.bot_utils import EngineStatus, get_readable_file_size, MirrorStatus, get_readable_time
+from bot.helper.ext_utils.bot_utils import get_readable_file_size, MirrorStatus, get_readable_time
 
 
 class MegaDownloadStatus:
 
-    def __init__(self, name, size, gid, obj, message, upload_details):
+    def __init__(self, name, size, gid, obj, message):
         self.__obj = obj
         self.__name = name
         self.__size = size
         self.__gid = gid
         self.message = message
-        self.upload_details = upload_details
 
     def name(self):
         return self.__name
@@ -49,6 +48,3 @@ class MegaDownloadStatus:
 
     def download(self):
         return self.__obj
-
-    def eng(self):
-        return EngineStatus().STATUS_MEGA

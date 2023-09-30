@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from os import path as ospath, listdir
-from secrets import token_hex
+from secrets import token_urlsafe
 from logging import getLogger
 from yt_dlp import YoutubeDL, DownloadError
 from re import search as re_search
@@ -10,7 +10,7 @@ from bot.helper.telegram_helper.message_utils import sendStatusMessage
 from ..status_utils.yt_dlp_download_status import YtDlpDownloadStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.ext_utils.bot_utils import sync_to_async, async_to_sync
-from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
+from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
 
 LOGGER = getLogger(__name__)
 
@@ -54,7 +54,6 @@ class YoutubeDLHelper:
         self.__ext = ''
         self.name = ''
         self.is_playlist = False
-        self.playlist_count = 0
         self.opts = {'progress_hooks': [self.__onDownloadProgress],
                      'logger': MyLogger(self),
                      'usenetrc': True,
@@ -139,8 +138,6 @@ class YoutubeDLHelper:
                     raise ValueError('Info result is None')
             except Exception as e:
                 return self.__onDownloadError(str(e))
-            if self.is_playlist:
-                self.playlist_count = result.get('playlist_count', 0)
             if 'entries' in result:
                 self.name = name
                 for entry in result['entries']:
@@ -163,10 +160,6 @@ class YoutubeDLHelper:
                 self.name = f"{name}{ext}" if name else realName
                 if not self.__ext:
                     self.__ext = ext
-                if result.get('filesize'):
-                    self.__size = result['filesize']
-                elif result.get('filesize_approx'):
-                    self.__size = result['filesize_approx']
 
     def __download(self, link, path):
         try:
@@ -192,7 +185,8 @@ class YoutubeDLHelper:
             self.opts['ignoreerrors'] = True
             self.is_playlist = True
 
-        self.__gid = token_hex(5)
+        self.__gid = token_urlsafe(10)
+
         await self.__onDownloadStart()
 
         self.opts['postprocessors'] = [
@@ -254,9 +248,7 @@ class YoutubeDLHelper:
         if msg:
             await self.__listener.onDownloadError(msg, button)
             return
-        if limit_exceeded := await limit_checker(self.__size, self.__listener, isYtdlp=True, isPlayList=self.playlist_count):
-            await self.__listener.onDownloadError(limit_exceeded)
-            return
+
         added_to_queue, event = await is_queued(self.__listener.uid)
         if added_to_queue:
             LOGGER.info(f"Added to Queue/Download: {self.name}")

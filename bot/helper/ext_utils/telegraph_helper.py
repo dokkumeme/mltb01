@@ -5,7 +5,7 @@ from asyncio import sleep
 from telegraph.aio import Telegraph
 from telegraph.exceptions import RetryAfterError
 
-from bot import LOGGER, bot_loop, config_dict
+from bot import LOGGER, bot_loop
 
 
 class TelegraphHelper:
@@ -23,7 +23,7 @@ class TelegraphHelper:
             author_url=self.author_url
         )
         self.access_token = self.telegraph.get_access_token()
-        LOGGER.info(f"Telegraph Account Generated : {self.short_name}")
+        LOGGER.info("Creating Telegraph Account")
 
     async def create_page(self, title, content):
         try:
@@ -34,7 +34,8 @@ class TelegraphHelper:
                 html_content=content
             )
         except RetryAfterError as st:
-            LOGGER.warning(f'Telegraph Flood control exceeded. I will sleep for {st.retry_after} seconds.')
+            LOGGER.warning(
+                f'Telegraph Flood control exceeded. I will sleep for {st.retry_after} seconds.')
             await sleep(st.retry_after)
             return await self.create_page(title, content)
 
@@ -48,7 +49,8 @@ class TelegraphHelper:
                 html_content=content
             )
         except RetryAfterError as st:
-            LOGGER.warning(f'Telegraph Flood control exceeded. I will sleep for {st.retry_after} seconds.')
+            LOGGER.warning(
+                f'Telegraph Flood control exceeded. I will sleep for {st.retry_after} seconds.')
             await sleep(st.retry_after)
             return await self.edit_page(path, title, content)
 
@@ -69,13 +71,13 @@ class TelegraphHelper:
                     nxt_page += 1
             await self.edit_page(
                 path=path[prev_page],
-                title=f"{config_dict['TITLE_NAME']} Torrent Search",
+                title='Mirror-leech-bot Torrent Search',
                 content=content
             )
         return
 
 
-telegraph = TelegraphHelper(config_dict['AUTHOR_NAME'],
-                            config_dict['AUTHOR_URL'])
+telegraph = TelegraphHelper('Mirror-Leech-Telegram-Bot',
+                            'https://github.com/anasty17/mirror-leech-telegram-bot')
 
 bot_loop.run_until_complete(telegraph.create_account())

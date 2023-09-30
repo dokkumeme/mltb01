@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from bot import LOGGER
-from bot.helper.ext_utils.bot_utils import EngineStatus, get_readable_file_size, MirrorStatus
+from bot.helper.ext_utils.bot_utils import get_readable_file_size, MirrorStatus
 
 
 class QueueStatus:
@@ -9,9 +9,8 @@ class QueueStatus:
         self.__size = size
         self.__gid = gid
         self.__listener = listener
-        self.upload_details = listener.upload_details
         self.__status = status
-        self.message = listener.message
+        self.message = self.__listener.message
 
     def gid(self):
         return self.__gid
@@ -48,7 +47,3 @@ class QueueStatus:
             await self.__listener.onDownloadError('task have been removed from queue/download')
         else:
             await self.__listener.onUploadError('task have been removed from queue/upload')
-
-
-    def eng(self):
-        return EngineStatus().STATUS_QUEUE

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from bot import LOGGER
-from bot.helper.ext_utils.bot_utils import EngineStatus, get_readable_file_size, MirrorStatus
+from bot.helper.ext_utils.bot_utils import get_readable_file_size, MirrorStatus
 
 
 class SplitStatus:
@@ -9,8 +9,7 @@ class SplitStatus:
         self.__gid = gid
         self.__size = size
         self.__listener = listener
-        self.upload_details = listener.upload_details
-        self.message = listener.message
+        self.message = self.__listener.message
 
     def gid(self):
         return self.__gid
@@ -46,7 +45,3 @@ class SplitStatus:
         else:
             self.__listener.suproc = 'cancelled'
         await self.__listener.onUploadError('splitting stopped by user!')
-
-
-    def eng(self):
-        return EngineStatus().STATUS_SPLIT_MERGE

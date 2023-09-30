@@ -20,10 +20,10 @@ async def shell(_, message):
     stdout, stderr, _ = await cmd_exec(cmd, shell=True)
     reply = ''
     if len(stdout) != 0:
-        reply += f"*Stdout*\n{stdout}\n"
+        reply += f"*Stdout*\n<code>{stdout}</code>\n"
         LOGGER.info(f"Shell - {cmd} - {stdout}")
     if len(stderr) != 0:
-        reply += f"*Stderr*\n{stderr}"
+        reply += f"*Stderr*\n<code>{stderr}</code>"
         LOGGER.error(f"Shell - {cmd} - {stderr}")
     if len(reply) > 3000:
         with BytesIO(str.encode(reply)) as out_file:
@@ -36,6 +36,6 @@ async def shell(_, message):
 
 
 bot.add_handler(MessageHandler(shell, filters=command(
-    BotCommands.ShellCommand) & CustomFilters.sudo))
+    BotCommands.ShellCommand) & CustomFilters.owner))
 bot.add_handler(EditedMessageHandler(shell, filters=command(
-    BotCommands.ShellCommand) & CustomFilters.sudo))
+    BotCommands.ShellCommand) & CustomFilters.owner))

@@ -10,7 +10,7 @@ from bot.helper.telegram_helper.message_utils import editMessage, sendMessage
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.ext_utils.bot_utils import get_readable_file_size, sync_to_async, new_task, checking_access
+from bot.helper.ext_utils.bot_utils import get_readable_file_size, sync_to_async, new_task
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
 PLUGINS = []
@@ -145,7 +145,7 @@ async def __getResult(search_results, key, message, method):
                     msg += f"<b>Size: </b>{result['size']}<br>"
                     try:
                         msg += f"<b>Seeders: </b>{result['seeders']} | <b>Leechers: </b>{result['leechers']}<br>"
-                    except Exception:
+                    except:
                         pass
                     if 'torrent' in result.keys():
                         msg += f"<a href='{result['torrent']}'>Direct Link</a><br><br>"
@@ -177,7 +177,7 @@ async def __getResult(search_results, key, message, method):
         telegraph_content.append(msg)
 
     await editMessage(message, f"<b>Creating</b> {len(telegraph_content)} <b>Telegraph pages.</b>")
-    path = [(await telegraph.create_page(title=f"{config_dict['TITLE_NAME']} Torrent Search",
+    path = [(await telegraph.create_page(title='Mirror-leech-bot Torrent Search',
                                          content=content))["path"] for content in telegraph_content]
     if len(path) > 1:
         await editMessage(message, f"<b>Editing</b> {len(telegraph_content)} <b>Telegraph pages.</b>")
@@ -212,12 +212,8 @@ async def __plugin_buttons(user_id):
 async def torrentSearch(_, message):
     user_id = message.from_user.id
     buttons = ButtonMaker()
-    key = message.text.split() if message.text else ['/cmd']
+    key = message.text.split()
     SEARCH_PLUGINS = config_dict['SEARCH_PLUGINS']
-    msg, btn = await checking_access(user_id)
-    if msg is not None:
-        await sendMessage(message, msg, btn.build_menu(1))
-        return
     if SITES is None and not SEARCH_PLUGINS:
         await sendMessage(message, "No API link or search PLUGINS added for this function")
     elif len(key) == 1 and SITES is None:
@@ -281,6 +277,6 @@ async def torrentSearchUpdate(_, query):
 
 
 bot.add_handler(MessageHandler(torrentSearch, filters=command(
-    BotCommands.SearchCommand) & CustomFilters.authorized & ~CustomFilters.blacklisted))
+    BotCommands.SearchCommand) & CustomFilters.authorized))
 bot.add_handler(CallbackQueryHandler(
     torrentSearchUpdate, filters=regex("^torser")))

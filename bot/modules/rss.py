@@ -12,7 +12,7 @@ from re import split as re_split
 from io import BytesIO
 
 from bot import scheduler, rss_dict, LOGGER, DATABASE_URL, config_dict, bot
-from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, sendRss, sendFile
+from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, sendRss, sendFile, deleteMessage
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManger
@@ -132,7 +132,7 @@ async def rssSub(client, message, pre_event):
                                                 'inf': inf_lists, 'exf': exf_lists, 'paused': False, 'command': cmd, 'tag': tag}
                 else:
                     rss_dict[user_id] = {title: {'link': feed_link, 'last_feed': last_link, 'last_title': last_title,
-                                                'inf': inf_lists, 'exf': exf_lists, 'paused': False, 'command': cmd, 'tag': tag}}
+                                                 'inf': inf_lists, 'exf': exf_lists, 'paused': False, 'command': cmd, 'tag': tag}}
             LOGGER.info(
                 f"Rss Feed Added: id: {user_id} - title: {title} - link: {feed_link} - c: {cmd} - inf: {inf} - exf: {exf}")
         except (IndexError, AttributeError) as e:
@@ -151,6 +151,7 @@ async def rssSub(client, message, pre_event):
     elif is_sudo and not scheduler.running:
         addJob(config_dict['RSS_DELAY'])
         scheduler.start()
+
 
 async def getUserId(title):
     async with rss_dict_lock:
@@ -280,7 +281,7 @@ async def rssGet(client, message, pre_event):
                     with BytesIO(item_info_ecd) as out_file:
                         out_file.name = f"rssGet {title} items_no. {count}.txt"
                         await sendFile(message, out_file)
-                    await msg.delete()
+                    await deleteMessage(msg)
                 else:
                     await editMessage(msg, item_info)
             except IndexError as e:
@@ -383,8 +384,8 @@ async def rssListener(client, query):
     elif data[1] == 'close':
         await query.answer()
         handler_dict[user_id] = False
-        await message.reply_to_message.delete()
-        await message.delete()
+        await deleteMessage(message.reply_to_message)
+        await deleteMessage(message)
     elif data[1] == 'back':
         await query.answer()
         handler_dict[user_id] = False
@@ -651,8 +652,9 @@ def addJob(delay):
     scheduler.add_job(rssMonitor, trigger=IntervalTrigger(seconds=delay), id='0', name='RSS', misfire_grace_time=15,
                       max_instances=1, next_run_time=datetime.now()+timedelta(seconds=20), replace_existing=True)
 
+
 addJob(config_dict['RSS_DELAY'])
 scheduler.start()
 bot.add_handler(MessageHandler(getRssMenu, filters=command(
-    BotCommands.RssCommand) & CustomFilters.authorized & ~CustomFilters.blacklisted))
-bot.add_handler(CallbackQueryHandler(rssListener, filters=regex(r"^rss")))
+    BotCommands.RssCommand) & CustomFilters.authorized))
+bot.add_handler(CallbackQueryHandler(rssListener, filters=regex("^rss")))

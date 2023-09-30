@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from secrets import token_hex
+from secrets import token_urlsafe
 
 from bot import (LOGGER, aria2_options, aria2c_global, download_dict,
                  download_dict_lock, non_queued_dl, queue_dict_lock)
@@ -18,17 +18,16 @@ async def add_direct_download(details, path, listener, foldername):
         return
     size = details['total_size']
 
-    if foldername:
-        path = f'{path}/{foldername}'
-
     if not foldername:
         foldername = details['title']
+    path = f'{path}/{foldername}'
+
     msg, button = await stop_duplicate_check(foldername, listener)
     if msg:
         await sendMessage(listener.message, msg, button)
         return
 
-    gid = token_hex(5)
+    gid = token_urlsafe(10)
     added_to_queue, event = await is_queued(listener.uid)
     if added_to_queue:
         LOGGER.info(f"Added to Queue/Download: {foldername}")
@@ -53,7 +52,7 @@ async def add_direct_download(details, path, listener, foldername):
     a2c_opt['follow-metalink'] = 'false'
     directListener = DirectListener(foldername, size, path, listener, a2c_opt)
     async with download_dict_lock:
-        download_dict[listener.uid] = DirectStatus(directListener, gid, listener, listener.upload_details)
+        download_dict[listener.uid] = DirectStatus(directListener, gid, listener)
 
     async with queue_dict_lock:
         non_queued_dl.add(listener.uid)

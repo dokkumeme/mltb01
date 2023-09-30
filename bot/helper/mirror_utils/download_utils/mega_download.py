@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-from secrets import token_hex
+from secrets import token_urlsafe
 from aiofiles.os import makedirs
 from asyncio import Event
-from mega import MegaApi, MegaListener, MegaRequest, MegaTransfer, MegaError
+from mega import (MegaApi, MegaListener, MegaRequest, MegaTransfer, MegaError)
 
 from bot import LOGGER, config_dict, download_dict_lock, download_dict, non_queued_dl, queue_dict_lock
 from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
 from bot.helper.ext_utils.bot_utils import get_mega_link_type, async_to_sync, sync_to_async
 from bot.helper.mirror_utils.status_utils.mega_download_status import MegaDownloadStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
-from bot.helper.ext_utils.task_manager import is_queued, limit_checker, stop_duplicate_check
+from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
 
 
 class MegaAppListener(MegaListener):
@@ -122,7 +122,7 @@ async def add_mega_download(mega_link, path, listener, name):
     MEGA_PASSWORD = config_dict['MEGA_PASSWORD']
 
     executor = AsyncExecutor()
-    api = MegaApi(None, None, None, 'WZML-X')
+    api = MegaApi(None, None, None, 'mirror-leech-telegram-bot')
     folder_api = None
 
     mega_listener = MegaAppListener(executor.continue_event, listener)
@@ -135,7 +135,7 @@ async def add_mega_download(mega_link, path, listener, name):
         await executor.do(api.getPublicNode, (mega_link,))
         node = mega_listener.public_node
     else:
-        folder_api = MegaApi(None, None, None, 'WZML-X')
+        folder_api = MegaApi(None, None, None, 'mirror-leech-telegram-bot')
         folder_api.addListener(mega_listener)
         await executor.do(folder_api.loginToFolder, (mega_link,))
         node = await sync_to_async(folder_api.authorizeNode, mega_listener.node)
@@ -155,11 +155,9 @@ async def add_mega_download(mega_link, path, listener, name):
             await executor.do(folder_api.logout, ())
         return
 
-    gid = token_hex(5)
+    gid = token_urlsafe(8)
     size = api.getSize(node)
-    if limit_exceeded := await limit_checker(size, listener, isMega=True):
-        await sendMessage(listener.message, limit_exceeded)
-        return
+
     added_to_queue, event = await is_queued(listener.uid)
     if added_to_queue:
         LOGGER.info(f"Added to Queue/Download: {name}")
@@ -181,7 +179,8 @@ async def add_mega_download(mega_link, path, listener, name):
         from_queue = False
 
     async with download_dict_lock:
-        download_dict[listener.uid] = MegaDownloadStatus(name, size, gid, mega_listener, listener.message, listener.upload_details)
+        download_dict[listener.uid] = MegaDownloadStatus(
+            name, size, gid, mega_listener, listener.message)
     async with queue_dict_lock:
         non_queued_dl.add(listener.uid)
 
